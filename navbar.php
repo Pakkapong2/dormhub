@@ -1,5 +1,5 @@
 <?php
-$base_url = "http://localhost/project/"; 
+$base_url = "http://localhost/dormhub/"; 
 
 if (!isset($user) && isset($_SESSION['user'])) {
     require_once 'config/db_connect.php';
