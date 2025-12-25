@@ -26,7 +26,7 @@ if (isset($_POST['login'])) {
 
         // --- แยกหน้า Redirect ตาม Role (บทบาท) ---
         if ($user['role'] === 'admin') {
-            header("Location: admin/dashboard.php"); // ถ้าเป็นแอดมินไปหน้าหลังบ้าน
+            header("Location: index.php"); // ถ้าเป็นแอดมินไปหน้าหลังบ้าน
         } else {
             header("Location: index.php"); // ถ้าเป็นผู้เช่าไปหน้าดูข้อมูลตัวเอง
         }

@@ -19,12 +19,8 @@ $rooms = $stmt->fetchAll();
 $total_rooms = $pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn();
 $all_rooms = $pdo->query("SELECT * FROM rooms ORDER BY room_number ASC")->fetchAll();
 
-/**
- * ฟังก์ชันตรวจสอบรูปภาพ
- * แก้ไขปัญหา "หมุนค้าง" และ ERR_NAME_NOT_RESOLVED
- */
+
 function getRoomImage($imageName) {
-    // ใช้ Base64 แทน URL ภายนอก เพื่อป้องกันปัญหาเรื่อง Internet/DNS
     $noImageBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAACACAMAAACe28YnAAAAA1BMVEWzsrK76Y6RAAAAR0lEQVR4nO3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAO8GxYgAAbXv9u4AAAAASUVORK5CYII=";
     
     if (empty($imageName)) {
@@ -39,14 +35,12 @@ function getRoomImage($imageName) {
     return $filePath;
 }
 
-// --- ระบบลบห้อง ---
 if (isset($_GET['delete_id'])) {
     $pdo->prepare("DELETE FROM rooms WHERE room_id = ?")->execute([$_GET['delete_id']]);
     header("Location: manage_rooms.php?msg=deleted");
     exit();
 }
 
-// --- ระบบแก้ไขห้อง ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_room'])) {
     $room_id = $_POST['room_id'];
     $base_rent = $_POST['base_rent'];
@@ -69,7 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_room'])) {
     exit();
 }
 
-// --- ระบบเพิ่มห้อง ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_room'])) {
     $room_number = $_POST['room_number'];
     $base_rent = $_POST['base_rent'] ?? 0;
