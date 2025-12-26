@@ -2,7 +2,6 @@
 session_start();
 require_once '../config/db_connect.php';
 
-// 1. ตรวจสอบสิทธิ์
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../login.php');
     exit;
@@ -14,11 +13,9 @@ if (!$pay_id) {
     exit;
 }
 
-// 2. ประมวลผลเมื่อมีการอัปโหลด
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $target_dir = "../uploads/slips/";
     
-    // สร้างโฟลเดอร์อัตโนมัติถ้ายังไม่มี
     if (!file_exists($target_dir)) {
         mkdir($target_dir, 0777, true);
     }
@@ -27,11 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $new_filename = "SLIP_" . $pay_id . "_" . time() . "." . $file_extension;
     $target_file = $target_dir . $new_filename;
 
-    // ตรวจสอบว่าเป็นรูปภาพจริงไหม
     $check = getimagesize($_FILES["slip_image"]["tmp_name"]);
     if ($check !== false) {
         if (move_uploaded_file($_FILES["slip_image"]["tmp_name"], $target_file)) {
-            // อัปเดตฐานข้อมูล: เก็บชื่อไฟล์และเปลี่ยนสถานะเป็น 'waiting'
             $stmt = $pdo->prepare("UPDATE payments SET slip_image = ?, status = 'waiting' WHERE payment_id = ?");
             $stmt->execute([$new_filename, $pay_id]);
             
@@ -41,7 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// ดึงยอดเงินมาโชว์อีกครั้งเพื่อความชัวร์
 $stmt = $pdo->prepare("SELECT amount FROM payments WHERE payment_id = ?");
 $stmt->execute([$pay_id]);
 $payment = $stmt->fetch();

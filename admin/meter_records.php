@@ -7,12 +7,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// ดึงราคาต่อหน่วย
 $config = $pdo->query("SELECT * FROM settings LIMIT 1")->fetch();
 $water_rate = $config['water_rate'] ?? 0;
 $electric_rate = $config['electric_rate'] ?? 0;
 
-// Logic บันทึกข้อมูล
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_meter'])) {
     $room_id = $_POST['room_id'];
     $prev_water = (int)$_POST['prev_water_meter'];
@@ -61,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_meter'])) {
     }
 }
 
-// ดึงรายชื่อห้อง
 $rooms = $pdo->query("
     SELECT r.*, u.fullname, 
     (SELECT curr_water_meter FROM meters WHERE room_id = r.room_id ORDER BY meter_id DESC LIMIT 1) as last_water,
@@ -179,7 +176,7 @@ $rooms = $pdo->query("
     </div>
 
     <script>
-        // ฟังก์ชันคำนวณเงินสดๆ (Real-time)
+        // ฟังก์ชันคำนวณเงิน
         function calc(input, prev, rate) {
             const current = parseInt(input.value) || 0;
             const display = input.closest('div.bg-blue-50\\/50, div.bg-orange-50\\/50').querySelector('.total-display');

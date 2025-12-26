@@ -2,7 +2,6 @@
 session_start();
 require_once '../config/db_connect.php';
 
-// 1. ตรวจสอบสิทธิ์การเข้าถึง
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../login.php'); 
     exit;
@@ -10,10 +9,6 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-/**
- * 2. ดึงข้อมูลบิลล่าสุด
- * แก้ไขคอลัมน์ r.price เป็น r.base_rent ให้ตรงกับฐานข้อมูลจริงของคุณ
- */
 $stmt = $pdo->prepare("
     SELECT p.*, m.*, r.room_number, r.base_rent as room_price
     FROM payments p
@@ -26,7 +21,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id]);
 $bill = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// ดึงการตั้งค่าราคาหน่วย
 $config = $pdo->query("SELECT * FROM settings LIMIT 1")->fetch();
 ?>
 

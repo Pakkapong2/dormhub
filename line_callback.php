@@ -1,7 +1,8 @@
 <?php
 session_start();
-require 'config/db_connect.php'; 
+require 'config/db_connect.php';
 
+// --- 1. ตรวจสอบพารามิเตอร์เบื้องต้น ---
 if (!isset($_GET['code'], $_GET['state'])) {
     die('Missing parameters');
 }
@@ -17,7 +18,7 @@ $client_id = '2008447819';
 $client_secret = '8b06447416799b311b55bf33e4b777c5';
 $redirect_uri = 'http://localhost/dormhub/line_callback.php';
 
-// --- 1. แลกเปลี่ยน Code เป็น Access Token ---
+// --- 2. แลกเปลี่ยน Code เป็น Access Token ---
 $token_url = 'https://api.line.me/oauth2/v2.1/token';
 $data = [
     'grant_type' => 'authorization_code',
@@ -41,7 +42,7 @@ if (!$response) die('Failed to get access token');
 $token = json_decode($response, true);
 $access_token = $token['access_token'] ?? null;
 
-// --- 2. ดึงข้อมูลโปรไฟล์จาก LINE ---
+// --- 3. ดึงข้อมูลโปรไฟล์จาก LINE ---
 $profile_url = 'https://api.line.me/v2/profile';
 $opts = [
     'http' => [
@@ -49,59 +50,55 @@ $opts = [
     ]
 ];
 $context = stream_context_create($opts);
-$profile = json_decode(file_get_contents($profile_url, false, $context), true);
+$profile_decode = file_get_contents($profile_url, false, $context);
+$profile = json_decode($profile_decode, true);
 
 if (!isset($profile['userId'])) die('Failed to get profile');
 
 $line_uid = $profile['userId'];
 
 try {
-    // --- 3. ตรวจสอบในฐานข้อมูลว่า Line ID นี้เคยผูกกับใครหรือยัง ---
+    // --- 4. ตรวจสอบในฐานข้อมูลว่า Line ID นี้เคยผูกไว้หรือยัง ---
     $stmt = $pdo->prepare("SELECT * FROM users WHERE line_user_id = ?");
     $stmt->execute([$line_uid]);
     $user = $stmt->fetch();
 
     if ($user) {
-        // --- กรณีที่ 1: พบ User/Admin ที่ผูกไว้แล้ว ---
+        // --- [CASE 1] พบ User/Admin ในระบบแล้ว -> ทำการ Login ทันที ---
         $_SESSION['user_id'] = $user['user_id'];
-        $_SESSION['user'] = $user['username'];
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['name'] = $user['name'];
-        
-        // แยกหน้า Redirect ตามบทบาท (Role)
+        $_SESSION['user']    = $user['username'];
+        $_SESSION['role']    = $user['role'];
+        $_SESSION['name']    = $user['fullname']; // อิงตามตาราง users
+
+        // ** Senior Fix: แยกทางเดินตาม Role ให้ถูกต้อง **
         if ($user['role'] === 'admin') {
-            // ถ้าเป็น Admin ให้ไปหน้า Dashboard หลังบ้าน
-            header('Location: index.php');
+            header("Location: admin/admin_dashboard.php"); // ชี้เข้าไปในโฟลเดอร์ admin
         } else {
-            // ถ้าเป็นผู้เช่าปกติ ให้ไปหน้าแรก
-            header('Location: index.php');
+            header("Location: index.php");
         }
         exit;
-        
     } else {
-        // --- กรณีที่ 2: LINE นี้ยังไม่เคยผูกกับบัญชีใดๆ ในหอเรา ---
-        
-        // เช็คว่าตอนนี้มีการ Login ค้างไว้หรือไม่ (ใช้ในกรณีผูกบัญชีครั้งแรก)
+        // --- [CASE 2] LINE นี้ยังไม่ได้ผูกกับบัญชีใดๆ ---
+
         if (isset($_SESSION['user_id'])) {
-            $update = $pdo->prepare("UPDATE users SET line_user_id = ?, line_display_name = ?, line_picture_url = ? WHERE user_id = ?");
-            $update->execute([$line_uid, $profile['displayName'], $profile['pictureUrl'], $_SESSION['user_id']]);
-            
-            // ผูกเสร็จแล้วส่งไปหน้าที่ควรจะเป็น
+            // ถ้า User ล็อกอินค้างไว้แล้ว (กดผูกจากหน้าโปรไฟล์)
+            $update = $pdo->prepare("UPDATE users SET line_user_id = ? WHERE user_id = ?");
+            $update->execute([$line_uid, $_SESSION['user_id']]);
+
+            // ตรวจสอบว่าใครเป็นคนผูก แล้วส่งกลับไปหน้าตัวเอง
             if ($_SESSION['role'] === 'admin') {
-                header('Location: index.php?msg=line_linked');
+                header('Location: admin_dashboard.php?msg=line_linked');
             } else {
                 header('Location: index.php?msg=line_linked');
             }
             exit;
         } else {
-            // ยังไม่มีข้อมูลในระบบและยังไม่ได้ล็อกอิน ให้ไปหน้า Login เพื่อยืนยันตัวตนก่อน
-            $_SESSION['pending_line_id'] = $line_uid; 
+            // ยังไม่มีบัญชีและยังไม่ได้ล็อกอิน -> เก็บ LINE ID ไว้ชั่วคราวแล้วให้ไป Login
+            $_SESSION['pending_line_id'] = $line_uid;
             header('Location: login.php?msg=bind_required');
             exit;
         }
     }
-
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
 }
-?>

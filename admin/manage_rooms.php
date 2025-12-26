@@ -7,7 +7,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// --- Logic แบ่งหน้า ---
 $limit = 5;
 $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
 $offset = ($p - 1) * $limit;
@@ -102,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_room'])) {
                 </h1>
                 <p class="text-slate-500 font-medium ml-10">เพิ่มและจัดการข้อมูลห้องพัก</p>
             </div>
-            <a href="../index.php" class="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 hover:text-emerald-600 transition-all shadow-sm group">
+            <a href="admin_dashboard.php" class="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 hover:text-emerald-600 transition-all shadow-sm group">
                 <i class="fa-solid fa-arrow-left transition-transform group-hover:-translate-x-1"></i>
                 กลับสู่หน้าหลัก
             </a>
@@ -261,7 +260,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_room'])) {
     <script>
         const noImageBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAACACAMAAACe28YnAAAAA1BMVEWzsrK76Y6RAAAAR0lEQVR4nO3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAO8GxYgAAbXv9u4AAAAASUVORK5CYII=";
 
-        // ระบบแจ้งเตือน
         const urlParams = new URLSearchParams(window.location.search);
         const msg = urlParams.get('msg');
         if (msg) {
@@ -287,8 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_room'])) {
             document.getElementById('modal_amenities').value = room.amenities || '';
             document.getElementById('modal_description').value = room.description || '';
             document.getElementById('modal_existing_image').value = room.room_image || '';
-            
-            // ใช้ Base64 แทน placeholder URL
+
             const imgPath = room.room_image ? "../uploads/" + room.room_image : noImageBase64;
             const previewImg = document.getElementById('preview_image');
             previewImg.src = imgPath;

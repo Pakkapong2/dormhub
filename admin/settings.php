@@ -2,17 +2,14 @@
 session_start();
 require '../config/db_connect.php';
 
-// ตรวจสอบสิทธิ์ (ต้องเป็น admin เท่านั้น)
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     die("Access Denied");
 }
 
-// ถ้ามีการกดบันทึก
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $water = $_POST['water_rate'];
     $electric = $_POST['electric_rate'];
 
-    // เช็คว่ามีข้อมูลเดิมอยู่ไหม
     $check = $pdo->query("SELECT COUNT(*) FROM settings")->fetchColumn();
 
     if ($check > 0) {
@@ -25,7 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $success = "บันทึกราคาต่อหน่วยเรียบร้อยแล้ว!";
 }
 
-// ดึงข้อมูลปัจจุบันมาโชว์
 $config = $pdo->query("SELECT * FROM settings LIMIT 1")->fetch();
 ?>
 

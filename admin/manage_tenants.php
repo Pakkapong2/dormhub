@@ -2,13 +2,11 @@
 session_start();
 require '../config/db_connect.php';
 
-// 1. ตรวจสอบสิทธิ์ Admin
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header('Location: ../login.php');
     exit;
 }
 
-// 2. Logic: เพิ่มผู้เช่า (Check-in)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_tenant'])) {
     $name = $_POST['name'];
     $phone = $_POST['phone'];
@@ -19,15 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_tenant'])) {
     try {
         $pdo->beginTransaction();
 
-        // [FIX] ใช้ role = 'user' แทน 'tenant' เพื่อให้ตรงกับ Database Schema ที่กำหนด enum ไว้
+ 
         $stmt = $pdo->prepare("INSERT INTO users (username, password, fullname, phone, role, room_id) VALUES (?, ?, ?, ?, 'user', ?)");
         $stmt->execute([$username, $password, $name, $phone, $room_id]);
 
-        // อัปเดตห้องเป็น 'occupied'
+      
         $updateRoom = $pdo->prepare("UPDATE rooms SET status = 'occupied' WHERE room_id = ?");
         $updateRoom->execute([$room_id]);
 
-        // ถ้าเลือกมาจากการจอง ให้เปลี่ยนสถานะการจองด้วย
+       
         if (!empty($_POST['booking_id'])) {
             $updateBooking = $pdo->prepare("UPDATE bookings SET status = 'checked_in' WHERE id = ?");
             $updateBooking->execute([$_POST['booking_id']]);
@@ -41,18 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_tenant'])) {
         die("เกิดข้อผิดพลาด: " . $e->getMessage());
     }
 }
-
-// 3. Logic: ย้ายผู้เช่าออก (Check-out) - [FIXED]
 if (isset($_GET['delete_id']) && isset($_GET['room_id'])) {
     try {
         $pdo->beginTransaction();
         
-        // [FIX] เปลี่ยนจาก DELETE เป็น UPDATE เพื่อรักษาประวัติการเงิน (Revenue) ไว้
-        // ปลด room_id ออก แต่ยังเก็บ user ไว้ในระบบ (อาจจะเปลี่ยน role หรือคงเดิมก็ได้)
         $stmt = $pdo->prepare("UPDATE users SET room_id = NULL WHERE user_id = ?");
         $stmt->execute([$_GET['delete_id']]);
 
-        // คืนสถานะห้องเป็นว่าง
         $pdo->prepare("UPDATE rooms SET status = 'available' WHERE room_id = ?")->execute([$_GET['room_id']]);
         
         $pdo->commit();
@@ -64,8 +57,6 @@ if (isset($_GET['delete_id']) && isset($_GET['room_id'])) {
     }
 }
 
-// 4. ดึงข้อมูลแสดงผล
-// [FIX] ดึงเฉพาะ user ที่มีห้องอยู่ (Active Tenants) แทนการเช็ค role='tenant' ซึ่งไม่มีใน DB
 $tenants = $pdo->query("
     SELECT u.*, r.room_number 
     FROM users u 
@@ -76,7 +67,6 @@ $tenants = $pdo->query("
 
 $available_rooms = $pdo->query("SELECT room_id, room_number FROM rooms WHERE status = 'available' ORDER BY room_number ASC")->fetchAll();
 
-// เช็คก่อนว่ามีตาราง bookings หรือไม่ เพื่อกัน Error กรณีจองยังไม่เสร็จ
 try {
     $bookings = $pdo->query("SELECT * FROM bookings WHERE status = 'confirmed'")->fetchAll();
 } catch (Exception $e) {

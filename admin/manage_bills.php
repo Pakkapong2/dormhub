@@ -2,13 +2,11 @@
 session_start();
 require '../config/db_connect.php';
 
-// 1. ตรวจสอบสิทธิ์ Admin
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header('Location: ../login.php');
     exit;
 }
 
-// 2. Logic: อัปเดตสถานะการชำระเงิน
 if (isset($_GET['approve_id'])) {
     $pay_id = $_GET['approve_id'];
     $admin_id = $_SESSION['user_id'];
@@ -19,7 +17,6 @@ if (isset($_GET['approve_id'])) {
     exit();
 }
 
-// 3. ดึงรายการบิลทั้งหมด (ดึง slip_image มาด้วย)
 $query = "
     SELECT p.*, u.fullname, r.room_number, m.billing_month
     FROM payments p
