@@ -2,27 +2,28 @@
 session_start();
 require '../config/db_connect.php';
 
-// 1. ตรวจสอบล็อกอินและสิทธิ์ Admin (อิงตามตาราง users)
+// 1. ตรวจสอบล็อกอินและสิทธิ์ Admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: login.php');
     exit;
 }
 
-// ดึงข้อมูลชื่อแอดมินเผื่อกรณี session ชื่อหาย
+// ดึงข้อมูลชื่อแอดมิน
 $stmt = $pdo->prepare("SELECT fullname FROM users WHERE user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $admin_info = $stmt->fetch();
 
-// 2. ดึงสถิติของ Admin (อิงตามฐานข้อมูลที่คุณให้มา)
+// 2. ดึงสถิติของ Admin (อิงตามโครงสร้างตารางที่คุณให้มา)
 $stats = [
     'empty_rooms' => $pdo->query("SELECT COUNT(*) FROM rooms WHERE status = 'available'")->fetchColumn(),
     'pending_bills' => $pdo->query("SELECT COUNT(*) FROM payments WHERE status = 'pending'")->fetchColumn(),
     'pending_repairs' => 0
 ];
 
-// ดึงข้อมูลการแจ้งซ่อม (ถ้ามีตาราง maintenance)
+// ดึงข้อมูลการแจ้งซ่อม (ใช้สถานะ pending และ in_progress จากตาราง maintenance)
 try {
-    $stats['pending_repairs'] = $pdo->query("SELECT COUNT(*) FROM maintenance WHERE status = 'pending'")->fetchColumn();
+    $stmt_repair = $pdo->query("SELECT COUNT(*) FROM maintenance WHERE status IN ('pending', 'in_progress')");
+    $stats['pending_repairs'] = $stmt_repair->fetchColumn();
 } catch (Exception $e) {
     $stats['pending_repairs'] = 0;
 }
@@ -90,7 +91,7 @@ try {
 
         <h2 class="text-sm font-black mb-6 text-slate-400 uppercase tracking-[0.2em]">Management Tools</h2>
         
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <a href="manage_rooms.php" class="bg-white p-8 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 text-center group">
                 <div class="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-bed text-2xl"></i>
@@ -117,6 +118,13 @@ try {
                     <i class="fa-solid fa-receipt text-2xl"></i>
                 </div>
                 <span class="block font-bold text-slate-700">บิลและรายได้</span>
+            </a>
+
+            <a href="manage_maintenance.php" class="bg-white p-8 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 text-center group">
+                <div class="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-screwdriver-wrench text-2xl"></i>
+                </div>
+                <span class="block font-bold text-slate-700">จัดการการแจ้งซ่อม</span>
             </a>
         </div>
 

@@ -26,7 +26,7 @@ if (isset($_POST['login'])) {
         if ($user['role'] === 'admin') {
             header("Location: admin/admin_dashboard.php"); // ชี้เข้าไปในโฟลเดอร์ admin
         } else {
-            header("Location: index.php");
+            header("Location: users/index.php");
         }
         exit;
     } else {

@@ -74,7 +74,7 @@ try {
         if ($user['role'] === 'admin') {
             header("Location: admin/admin_dashboard.php"); // ชี้เข้าไปในโฟลเดอร์ admin
         } else {
-            header("Location: index.php");
+            header("Location: users/index.php");
         }
         exit;
     } else {
@@ -89,7 +89,7 @@ try {
             if ($_SESSION['role'] === 'admin') {
                 header('Location: admin_dashboard.php?msg=line_linked');
             } else {
-                header('Location: index.php?msg=line_linked');
+                header('Location: users/index.php?msg=line_linked');
             }
             exit;
         } else {
