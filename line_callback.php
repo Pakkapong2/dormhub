@@ -1,104 +1,87 @@
 <?php
 session_start();
+error_reporting(0);
 require 'config/db_connect.php';
 
-// --- 1. ตรวจสอบพารามิเตอร์เบื้องต้น ---
-if (!isset($_GET['code'], $_GET['state'])) {
-    die('Missing parameters');
-}
+$code = $_GET['code'] ?? null;
+$state = $_GET['state'] ?? null;
 
-$code = $_GET['code'];
-$state = $_GET['state'];
+if (!$code) die('Access Denied');
 
-if (!isset($_SESSION['line_state']) || $state !== $_SESSION['line_state']) {
-    die('Invalid state');
-}
+// ถอดรหัสหน้าที่จะกลับไป
+$decoded_state = json_decode(base64_decode($state), true);
+$target_after_login = !empty($decoded_state['redirect_to']) ? $decoded_state['redirect_to'] : "index.php";
 
-$client_id = '2008447819';
-$client_secret = '8b06447416799b311b55bf33e4b777c5';
-$redirect_uri = 'http://localhost/dormhub/line_callback.php';
-
-// --- 2. แลกเปลี่ยน Code เป็น Access Token ---
+// 1. แลก Access Token
 $token_url = 'https://api.line.me/oauth2/v2.1/token';
 $data = [
     'grant_type' => 'authorization_code',
     'code' => $code,
-    'redirect_uri' => $redirect_uri,
-    'client_id' => $client_id,
-    'client_secret' => $client_secret
+    'redirect_uri' => 'http://localhost/dormhub/line_callback.php',
+    'client_id' => '2008447819',
+    'client_secret' => '8b06447416799b311b55bf33e4b777c5'
 ];
 
-$options = [
-    'http' => [
-        'header'  => "Content-Type: application/x-www-form-urlencoded\r\n",
-        'method'  => 'POST',
-        'content' => http_build_query($data),
-    ],
-];
-$context  = stream_context_create($options);
-$response = @file_get_contents($token_url, false, $context);
-if (!$response) die('Failed to get access token');
+$ch = curl_init($token_url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+$res = json_decode(curl_exec($ch), true);
 
-$token = json_decode($response, true);
-$access_token = $token['access_token'] ?? null;
+if (!isset($res['access_token'])) {
+    die('Login Failed: ' . ($res['error_description'] ?? 'Unknown Error'));
+}
 
-// --- 3. ดึงข้อมูลโปรไฟล์จาก LINE ---
-$profile_url = 'https://api.line.me/v2/profile';
-$opts = [
-    'http' => [
-        'header' => "Authorization: Bearer $access_token"
-    ]
-];
-$context = stream_context_create($opts);
-$profile_decode = file_get_contents($profile_url, false, $context);
-$profile = json_decode($profile_decode, true);
+// 2. ดึงโปรไฟล์จาก LINE
+$access_token = $res['access_token'];
+$ch = curl_init('https://api.line.me/v2/profile');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $access_token"]);
+$profile = json_decode(curl_exec($ch), true);
 
-if (!isset($profile['userId'])) die('Failed to get profile');
+$line_uid     = $profile['userId'];
+$display_name = $profile['displayName'];
+$picture_url  = $profile['pictureUrl'] ?? '';
 
-$line_uid = $profile['userId'];
+// 3. ตรวจสอบ User ในฐานข้อมูล
+$stmt = $pdo->prepare("SELECT * FROM users WHERE line_user_id = ?");
+$stmt->execute([$line_uid]);
+$user = $stmt->fetch();
 
-try {
-    // --- 4. ตรวจสอบในฐานข้อมูลว่า Line ID นี้เคยผูกไว้หรือยัง ---
+if (!$user) {
+    // กรณีเป็นสมาชิกใหม่: บันทึกเป็น 'viewer'
+    $stmt = $pdo->prepare("INSERT INTO users (username, fullname, line_user_id, line_picture_url, role) VALUES (?, ?, ?, ?, 'viewer')");
+    $stmt->execute([$line_uid, $display_name, $line_uid, $picture_url]);
+    
+    // ดึงข้อมูลกลับมาอีกครั้ง
     $stmt = $pdo->prepare("SELECT * FROM users WHERE line_user_id = ?");
     $stmt->execute([$line_uid]);
     $user = $stmt->fetch();
-
-    if ($user) {
-        // --- [CASE 1] พบ User/Admin ในระบบแล้ว -> ทำการ Login ทันที ---
-        $_SESSION['user_id'] = $user['user_id'];
-        $_SESSION['user']    = $user['username'];
-        $_SESSION['role']    = $user['role'];
-        $_SESSION['name']    = $user['fullname']; // อิงตามตาราง users
-
-        // ** Senior Fix: แยกทางเดินตาม Role ให้ถูกต้อง **
-        if ($user['role'] === 'admin') {
-            header("Location: admin/admin_dashboard.php"); // ชี้เข้าไปในโฟลเดอร์ admin
-        } else {
-            header("Location: users/index.php");
-        }
-        exit;
-    } else {
-        // --- [CASE 2] LINE นี้ยังไม่ได้ผูกกับบัญชีใดๆ ---
-
-        if (isset($_SESSION['user_id'])) {
-            // ถ้า User ล็อกอินค้างไว้แล้ว (กดผูกจากหน้าโปรไฟล์)
-            $update = $pdo->prepare("UPDATE users SET line_user_id = ? WHERE user_id = ?");
-            $update->execute([$line_uid, $_SESSION['user_id']]);
-
-            // ตรวจสอบว่าใครเป็นคนผูก แล้วส่งกลับไปหน้าตัวเอง
-            if ($_SESSION['role'] === 'admin') {
-                header('Location: admin_dashboard.php?msg=line_linked');
-            } else {
-                header('Location: users/index.php?msg=line_linked');
-            }
-            exit;
-        } else {
-            // ยังไม่มีบัญชีและยังไม่ได้ล็อกอิน -> เก็บ LINE ID ไว้ชั่วคราวแล้วให้ไป Login
-            $_SESSION['pending_line_id'] = $line_uid;
-            header('Location: login.php?msg=bind_required');
-            exit;
-        }
-    }
-} catch (PDOException $e) {
-    die("Database error: " . $e->getMessage());
 }
+
+// 4. ตั้งค่า Session (ใช้ session_regenerate_id เพื่อความปลอดภัย)
+session_regenerate_id();
+$_SESSION['user_id']  = $user['user_id'];
+$_SESSION['fullname'] = $user['fullname'];
+$_SESSION['picture']  = $user['line_picture_url'];
+$_SESSION['role']     = $user['role']; // สำคัญมาก: ต้องเก็บ role จริงจาก DB ลง Session
+
+// 5. ระบบดีดหน้า (Redirect Logic) 
+// ใช้ Full Path เพื่อป้องกัน Browser หลงทาง
+$base_url = "http://localhost/dormhub/";
+
+if ($user['role'] === 'admin') {
+    header("Location: " . $base_url . "admin/manage_tenants.php");
+} elseif ($user['role'] === 'user') {
+    // ถ้าเป็น user แต่ไม่มีห้องพัก ให้ถือว่าเป็น viewer ก่อน
+    if (empty($user['room_id']) || $user['room_id'] == 0) {
+        $_SESSION['role'] = 'viewer';
+        header("Location: " . $base_url . "index.php");
+    } else {
+        header("Location: " . $base_url . "users/index.php");
+    }
+} else {
+    // viewer
+    header("Location: " . $base_url . "index.php");
+}
+exit;

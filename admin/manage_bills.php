@@ -1,6 +1,6 @@
 <?php
 session_start();
-require '../config/db_connect.php';
+require_once __DIR__ . '/../config/db_connect.php';
 
 // 1. ตรวจสอบสิทธิ์ Admin
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
@@ -25,7 +25,11 @@ if (isset($_POST['reject_id'])) {
     $stmt_img = $pdo->prepare("SELECT slip_image FROM payments WHERE payment_id = ?");
     $stmt_img->execute([$pay_id]);
     $img = $stmt_img->fetchColumn();
-    if ($img && file_exists("../uploads/slips/" . $img)) { unlink("../uploads/slips/" . $img); }
+    
+    if ($img && file_exists(__DIR__ . "/../uploads/slips/" . $img)) { 
+        unlink(__DIR__ . "/../uploads/slips/" . $img); 
+    }
+    
     $stmt = $pdo->prepare("UPDATE payments SET status = 'rejected', slip_image = NULL, reject_reason = ? WHERE payment_id = ?");
     $stmt->execute([$reason, $pay_id]);
     header("Location: manage_bills.php?msg=rejected");
@@ -74,190 +78,176 @@ $bills = $pdo->query($query)->fetchAll();
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Anuphan', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Anuphan', sans-serif; }
         .stat-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); }
-        @media print { .no-print { display: none; } }
+        .stat-card:hover { transform: translateY(-5px); }
+        @media print { .no-print { display: none !important; } .lg\:ml-72 { margin-left: 0 !important; } }
     </style>
 </head>
-<body class="bg-slate-50 pb-20">
+<body class="bg-slate-50 min-h-screen">
 
-    <?php include __DIR__ . '/../navbar.php'; ?>
+    <?php include __DIR__ . '/../sidebar.php'; ?>
 
-    <div class="container mx-auto px-4 py-8">
-        
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 no-print">
-            <div>
-                <h2 class="text-3xl font-black text-slate-800 uppercase italic tracking-tighter">Billing Management</h2>
-                <div class="flex items-center gap-2 text-slate-400 text-sm font-bold mt-1">
-                    <a href="admin_dashboard.php" class="hover:text-blue-600 transition-colors">Dashboard</a>
-                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                    <span class="text-slate-600">จัดการบิลและการชำระเงิน</span>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <a href="add_meter.php" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> จดมิเตอร์/ออกบิล
-                </a>
-                <button onclick="window.print()" class="bg-white border border-slate-200 text-slate-600 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-print"></i> พิมพ์รายงาน
-                </button>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10 no-print">
-            <div class="stat-card bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-[2rem] text-white shadow-xl flex flex-col justify-between overflow-hidden relative">
-                <i class="fa-solid fa-money-bill-wave absolute -right-4 -top-4 text-8xl opacity-10"></i>
+    <div class="lg:ml-72 transition-all">
+        <div class="container mx-auto px-4 py-10">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 no-print">
                 <div>
-                    <p class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">ยอดเงินที่ได้รับแล้ว</p>
-                    <h2 class="text-4xl font-black">฿<?= number_format($total_paid, 2) ?></h2>
+                    <h1 class="text-3xl font-black text-slate-800 flex items-center gap-3 italic uppercase tracking-tighter">
+                        <i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Billing Management
+                    </h1>
+                    <p class="text-slate-500 font-medium mt-1">ตรวจสอบการชำระเงินและจัดการรายได้</p>
                 </div>
-                <p class="mt-4 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full italic"><?= $count_paid ?> รายการสำเร็จ</p>
+                <div class="flex gap-3">
+                    <button onclick="window.print()" class="bg-white border border-slate-200 text-slate-600 px-6 py-3 rounded-2xl font-black text-xs hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-print"></i> PRINT REPORT
+                    </button>
+                    <a href="meter_records.php" class="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-xs hover:bg-blue-600 shadow-xl transition-all flex items-center gap-2 uppercase italic">
+                        <i class="fa-solid fa-plus"></i> Create Bill
+                    </a>
+                </div>
             </div>
 
-            <div class="stat-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-between">
-                <div>
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ยอดเงินค้างชำระ</p>
-                    <h2 class="text-3xl font-black text-slate-800">฿<?= number_format($total_pending, 2) ?></h2>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10 no-print">
+                <div class="stat-card bg-emerald-500 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+                    <i class="fa-solid fa-money-bill-trend-up absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+                    <p class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2">ยอดเงินรับแล้ว</p>
+                    <h2 class="text-4xl font-black italic">฿<?= number_format($total_paid, 2) ?></h2>
+                    <div class="mt-4 inline-block bg-white/20 px-4 py-1 rounded-full text-[10px] font-bold"><?= $count_paid ?> รายการสำเร็จ</div>
                 </div>
-                <p class="mt-4 text-xs font-bold text-rose-500 italic uppercase">รอชำระ <?= $count_waiting + $count_pending ?> บิล</p>
-            </div>
 
-            <div class="lg:col-span-2 stat-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between">
-                <div class="flex items-center gap-8">
-                    <div class="w-24 h-24 relative">
-                        <canvas id="paymentChart"></canvas>
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-lg font-black text-slate-800"><?= $percent_paid ?>%</span>
+                <div class="stat-card bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ค้างชำระ</p>
+                    <h2 class="text-3xl font-black text-slate-800 italic">฿<?= number_format($total_pending, 2) ?></h2>
+                    <p class="mt-4 text-[10px] font-black text-rose-500 uppercase tracking-tight italic">รอชำระ <?= $count_waiting + $count_pending ?> บิล</p>
+                </div>
+
+                <div class="lg:col-span-2 stat-card bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
+                    <div class="flex items-center gap-8">
+                        <div class="w-24 h-24 relative">
+                            <canvas id="paymentChart"></canvas>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-lg font-black text-slate-800 italic"><?= $percent_paid ?>%</span>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h4 class="font-black text-slate-800 uppercase text-xs tracking-tighter mb-2">สรุปภาพรวม</h4>
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> จ่ายแล้ว (<?= $count_paid ?>)</div>
-                            <div class="flex items-center gap-2 text-[10px] font-bold text-blue-500 uppercase"><span class="w-2 h-2 rounded-full bg-blue-500"></span> รอตรวจ (<?= $count_waiting ?>)</div>
-                            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-300 uppercase"><span class="w-2 h-2 rounded-full bg-slate-200"></span> ค้าง (<?= $count_pending ?>)</div>
+                        <div>
+                            <h4 class="font-black text-slate-800 uppercase text-xs tracking-widest mb-3 italic">Payment Overview</h4>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-3 text-[10px] font-black text-emerald-500 uppercase"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Paid (<?= $count_paid ?>)</div>
+                                <div class="flex items-center gap-3 text-[10px] font-black text-blue-500 uppercase"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Checking (<?= $count_waiting ?>)</div>
+                                <div class="flex items-center gap-3 text-[10px] font-black text-slate-300 uppercase"><span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span> Pending (<?= $count_pending ?>)</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <a href="income_report.php" class="text-blue-500 text-xs font-black uppercase hover:underline p-2">ดูรายงาน <i class="fa-solid fa-arrow-right ml-1"></i></a>
             </div>
-        </div>
 
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 no-print">
-            <div class="relative w-full md:w-96">
-                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="billSearch" onkeyup="searchBill()" placeholder="ค้นหาเบอร์ห้อง หรือชื่อผู้เช่า..." 
-                    class="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm font-medium">
-            </div>
-            <div class="bg-white px-4 py-2 rounded-xl border border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <i class="fa-solid fa-sort"></i> เรียงตาม: รอตรวจสอบล่าสุด
-            </div>
-        </div>
+            <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden">
+                <div class="px-10 py-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <h3 class="font-black italic uppercase tracking-tighter text-xl">Invoice Transactions</h3>
+                    <div class="relative w-full md:w-80">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="billSearch" onkeyup="searchBill()" placeholder="ค้นหาห้อง หรือชื่อผู้เช่า..." 
+                            class="w-full pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm">
+                    </div>
+                </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left" id="billTable">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-100">
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500">ห้องพัก</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500">ผู้เช่า / รอบบิล</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">ยอดสุทธิ</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">หลักฐาน</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">สถานะ</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">ดำเนินการ</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <?php foreach($bills as $b): ?>
-                        <tr class="hover:bg-slate-50/50 transition-colors bill-row">
-                            <td class="p-6">
-                                <span class="w-14 h-14 flex items-center justify-center bg-slate-900 text-white rounded-2xl font-black text-lg italic room-num shadow-inner">
-                                    <?= $b['room_number'] ?>
-                                </span>
-                            </td>
-                            <td class="p-6">
-                                <p class="font-bold text-slate-700 text-base tenant-name"><?= htmlspecialchars($b['fullname']) ?></p>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">
-                                    <i class="fa-regular fa-calendar-check mr-1"></i>
-                                    <?= $b['billing_month'] ? date('F Y', strtotime($b['billing_month'])) : 'รอบพิเศษ' ?>
-                                </p>
-                            </td>
-                            <td class="p-6 text-center">
-                                <p class="font-black text-slate-800 text-xl tracking-tighter">฿<?= number_format($b['amount'], 2) ?></p>
-                                <button onclick='showDetail(<?= json_encode($b) ?>)' class="text-[9px] text-blue-500 font-black uppercase hover:underline mt-1">
-                                    View Details
-                                </button>
-                            </td>
-                            <td class="p-6 text-center">
-                                <?php if($b['slip_image']): ?>
-                                    <button onclick="viewSlip('../uploads/slips/<?= $b['slip_image'] ?>')" class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all inline-flex items-center justify-center shadow-sm">
-                                        <i class="fa-solid fa-file-invoice-dollar"></i>
-                                    </button>
-                                <?php else: ?>
-                                    <span class="text-slate-200"><i class="fa-solid fa-minus"></i></span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="p-6 text-center">
-                                <?php if($b['status'] == 'pending'): ?>
-                                    <span class="bg-slate-100 text-slate-400 px-3 py-1.5 rounded-full text-[9px] font-black uppercase italic">Unpaid</span>
-                                <?php elseif($b['status'] == 'waiting'): ?>
-                                    <span class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase italic animate-pulse ring-1 ring-blue-100">Checking</span>
-                                <?php elseif($b['status'] == 'rejected'): ?>
-                                    <span class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase italic ring-1 ring-rose-100">Rejected</span>
-                                <?php else: ?>
-                                    <span class="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase italic ring-1 ring-emerald-100">Approved</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="p-6 text-right space-x-1">
-                                <?php if($b['status'] != 'approved'): ?>
-                                    <button onclick="confirmApprove(<?= $b['payment_id'] ?>, '<?= $b['room_number'] ?>')" class="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black hover:bg-emerald-600 transition shadow-lg shadow-emerald-100 uppercase tracking-wider">Approve</button>
-                                    <?php if($b['status'] == 'waiting'): ?>
-                                    <button onclick="confirmReject(<?= $b['payment_id'] ?>, '<?= $b['room_number'] ?>')" class="bg-white border border-rose-200 text-rose-500 px-5 py-2.5 rounded-xl text-[10px] font-black hover:bg-rose-50 transition uppercase tracking-wider">Reject</button>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left" id="billTable">
+                        <thead class="bg-slate-50/50">
+                            <tr>
+                                <th class="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Room</th>
+                                <th class="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Tenant / Month</th>
+                                <th class="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Amount</th>
+                                <th class="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Slip</th>
+                                <th class="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Status</th>
+                                <th class="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <?php foreach($bills as $b): ?>
+                            <tr class="hover:bg-slate-50/80 transition-all bill-row">
+                                <td class="px-10 py-6">
+                                    <span class="w-14 h-14 flex items-center justify-center bg-slate-900 text-white rounded-2xl font-black text-lg italic room-num shadow-lg">
+                                        <?= $b['room_number'] ?>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-6">
+                                    <p class="font-black text-slate-800 tenant-name"><?= htmlspecialchars($b['fullname']) ?></p>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 italic">
+                                        <?= $b['billing_month'] ? date('F Y', strtotime($b['billing_month'])) : 'Special Bill' ?>
+                                    </p>
+                                </td>
+                                <td class="px-6 py-6 text-center">
+                                    <p class="font-black text-slate-800 text-lg italic tracking-tight">฿<?= number_format($b['amount'], 2) ?></p>
+                                    <button onclick='showDetail(<?= json_encode($b) ?>)' class="text-[9px] text-blue-500 font-black uppercase hover:underline mt-1">Details</button>
+                                </td>
+                                <td class="px-6 py-6 text-center">
+                                    <?php if($b['slip_image']): ?>
+                                        <button onclick="viewSlip('../uploads/slips/<?= $b['slip_image'] ?>')" class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all inline-flex items-center justify-center">
+                                            <i class="fa-solid fa-receipt text-lg"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="text-slate-200"><i class="fa-solid fa-minus"></i></span>
                                     <?php endif; ?>
-                                <?php else: ?>
-                                    <div class="flex flex-col items-end">
-                                        <p class="text-[9px] font-bold text-slate-400">Verified at:</p>
-                                        <p class="text-[10px] font-black text-slate-500 uppercase italic leading-none"><?= date('d M y H:i', strtotime($b['payment_date'])) ?></p>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                                </td>
+                                <td class="px-6 py-6 text-center">
+                                    <?php 
+                                        $status_style = [
+                                            'pending' => 'bg-slate-100 text-slate-400',
+                                            'waiting' => 'bg-blue-50 text-blue-600 animate-pulse ring-1 ring-blue-100',
+                                            'rejected' => 'bg-rose-50 text-rose-600',
+                                            'approved' => 'bg-emerald-50 text-emerald-600'
+                                        ];
+                                        $current_style = $status_style[$b['status']] ?? $status_style['pending'];
+                                    ?>
+                                    <span class="<?= $current_style ?> px-4 py-1.5 rounded-full text-[9px] font-black uppercase italic">
+                                        <?= $b['status'] ?>
+                                    </span>
+                                </td>
+                                <td class="px-10 py-6 text-right">
+                                    <?php if($b['status'] != 'approved'): ?>
+                                        <div class="flex justify-end gap-2">
+                                            <button onclick="confirmApprove(<?= $b['payment_id'] ?>, '<?= $b['room_number'] ?>')" class="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black hover:bg-slate-900 transition shadow-lg uppercase">Approve</button>
+                                            <?php if($b['status'] == 'waiting'): ?>
+                                                <button onclick="confirmReject(<?= $b['payment_id'] ?>, '<?= $b['room_number'] ?>')" class="bg-white border border-rose-200 text-rose-500 px-5 py-2.5 rounded-xl text-[10px] font-black hover:bg-rose-50 transition uppercase">Reject</button>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-right">
+                                            <p class="text-[8px] font-black text-slate-300 uppercase">Verified</p>
+                                            <p class="text-[10px] font-black text-slate-400 uppercase italic leading-none"><?= date('d M Y', strtotime($b['payment_date'])) ?></p>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <a href="admin_dashboard.php" class="fixed bottom-8 right-8 w-14 h-14 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all no-print z-50 ring-4 ring-white">
-        <i class="fa-solid fa-house"></i>
-    </a>
-
     <script>
-        // Chart.js Configuration
+        // Chart Config
         const ctx = document.getElementById('paymentChart').getContext('2d');
         new Chart(ctx, {
             type: 'doughnut',
             data: {
                 datasets: [{
                     data: [<?= $count_paid ?>, <?= $count_waiting ?>, <?= $count_pending ?>],
-                    backgroundColor: ['#10b981', '#3b82f6', '#cbd5e1'],
+                    backgroundColor: ['#10b981', '#3b82f6', '#e2e8f0'],
                     borderWidth: 0,
                     cutout: '80%'
                 }]
             },
-            options: { 
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } } 
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
-        // Live Search
+        // Search
         function searchBill() {
             let input = document.getElementById('billSearch').value.toLowerCase();
             Array.from(document.getElementsByClassName('bill-row')).forEach(row => {
@@ -266,50 +256,41 @@ $bills = $pdo->query($query)->fetchAll();
             });
         }
 
+        // SwAl Functions
         function viewSlip(url) { 
-            Swal.fire({ 
-                title: 'Transfer Evidence', 
-                imageUrl: url, 
-                imageAlt: 'Receipt Slip', 
-                showCloseButton: true, 
-                confirmButtonColor: '#0f172a',
-                confirmButtonText: 'Close'
-            }); 
+            Swal.fire({ title: 'Transfer Evidence', imageUrl: url, imageAlt: 'Receipt Slip', confirmButtonColor: '#0f172a', borderRadius: '2rem' }); 
         }
         
         function showDetail(data) {
             const wUnits = data.curr_water_meter - data.prev_water_meter;
             const eUnits = data.curr_electric_meter - data.prev_electric_meter;
             Swal.fire({
-                title: `<p class="text-xl font-black italic tracking-tighter">INVOICE: RM ${data.room_number}</p>`,
+                title: `<p class="text-xl font-black italic italic tracking-tighter">INVOICE: RM ${data.room_number}</p>`,
                 html: `
-                    <div class="text-left space-y-4 p-2 text-sm">
-                        <div class="flex justify-between border-b border-slate-100 pb-2"><span>Room Rent</span><span class="font-bold">฿${parseFloat(data.base_rent).toLocaleString()}</span></div>
-                        <div class="flex justify-between border-b border-slate-100 pb-2"><span>Water (${wUnits} Unit)</span><span class="font-bold text-blue-600">฿${parseFloat(data.water_total).toLocaleString()}</span></div>
-                        <div class="flex justify-between border-b border-slate-100 pb-2"><span>Electric (${eUnits} Unit)</span><span class="font-bold text-orange-500">฿${parseFloat(data.electric_total).toLocaleString()}</span></div>
-                        <div class="flex justify-between pt-2 text-slate-900 font-black text-2xl tracking-tighter"><span>Total Amount</span><span class="underline decoration-blue-500">฿${parseFloat(data.amount).toLocaleString()}</span></div>
+                    <div class="text-left space-y-4 p-4 text-sm font-bold">
+                        <div class="flex justify-between border-b pb-2"><span>Room Rent</span><span>฿${parseFloat(data.base_rent).toLocaleString()}</span></div>
+                        <div class="flex justify-between border-b pb-2 text-blue-600"><span>Water (${wUnits} Unit)</span><span>฿${parseFloat(data.water_total).toLocaleString()}</span></div>
+                        <div class="flex justify-between border-b pb-2 text-orange-500"><span>Electric (${eUnits} Unit)</span><span>฿${parseFloat(data.electric_total).toLocaleString()}</span></div>
+                        <div class="flex justify-between pt-2 text-slate-900 text-2xl font-black italic"><span>Total</span><span class="underline">฿${parseFloat(data.amount).toLocaleString()}</span></div>
                     </div>
                 `,
-                confirmButtonColor: '#0f172a'
+                confirmButtonColor: '#0f172a', borderRadius: '2rem'
             });
         }
 
         function confirmApprove(id, room) {
             Swal.fire({
-                title: 'Approve Payment?', text: `Verify payment for Room ${room}?`, icon: 'question',
-                showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Yes, Approve',
-                cancelButtonText: 'Cancel', borderRadius: '20px'
+                title: 'ยืนยันการชำระเงิน?', text: `ห้อง ${room} ชำระถูกต้องหรือไม่?`, icon: 'question',
+                showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'ยืนยัน (Approve)', borderRadius: '2rem'
             }).then((result) => { if (result.isConfirmed) window.location.href = `manage_bills.php?approve_id=${id}`; });
         }
 
         function confirmReject(id, room) {
             Swal.fire({
-                title: 'Reject Payment', text: 'Reason for rejection:', input: 'text',
-                inputPlaceholder: 'e.g. Invalid slip image, wrong amount...',
-                showCancelButton: true, confirmButtonColor: '#f43f5e', confirmButtonText: 'Reject Now',
-                preConfirm: (reason) => { if (!reason) { Swal.showValidationMessage('Please provide a reason'); } return reason; }
+                title: 'ปฏิเสธการชำระเงิน', text: 'ระบุเหตุผลที่ยกเลิก:', input: 'text',
+                showCancelButton: true, confirmButtonColor: '#f43f5e', confirmButtonText: 'ยืนยันยกเลิก', borderRadius: '2rem'
             }).then((result) => {
-                if (result.isConfirmed) {
+                if (result.isConfirmed && result.value) {
                     const form = document.createElement('form');
                     form.method = 'POST'; form.action = 'manage_bills.php';
                     const idInp = document.createElement('input'); idInp.type='hidden'; idInp.name='reject_id'; idInp.value=id;
