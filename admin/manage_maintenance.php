@@ -12,12 +12,12 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $m_id = $_POST['maintenance_id'];
     $status = $_POST['status'];
-    $remark = $_POST['admin_remark'] ?? '';
+    $admin_note = $_POST['admin_remark'] ?? '';
     
     $fixed_at = ($status == 'fixed') ? date('Y-m-d H:i:s') : NULL;
 
-    $sql = "UPDATE maintenance SET status = ?, admin_remark = ?";
-    $params = [$status, $remark];
+    $sql = "UPDATE maintenance SET status = ?, admin_note = ?";
+    $params = [$status, $admin_note];
 
     if ($fixed_at) {
         $sql .= ", fixed_at = ?";
@@ -141,9 +141,9 @@ $rooms = $pdo->query("SELECT room_id, room_number FROM rooms ORDER BY room_numbe
                                 <td class="px-8 py-7">
                                     <p class="font-black text-slate-800 italic uppercase leading-tight"><?= htmlspecialchars($t['title']) ?></p>
                                     <p class="text-slate-400 text-xs font-medium mt-1 truncate max-w-[200px]"><?= htmlspecialchars($t['description']) ?></p>
-                                    <?php if(!empty($t['admin_remark'])): ?>
+                                    <?php if(!empty($t['admin_note'])): ?>
                                         <div class="mt-2 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 w-fit px-2 py-1 rounded-lg border border-green-100">
-                                            <i class="fa-solid fa-comment-dots"></i> <?= htmlspecialchars($t['admin_remark']) ?>
+                                            <i class="fa-solid fa-comment-dots"></i> <?= htmlspecialchars($t['admin_note']) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
@@ -210,7 +210,7 @@ $rooms = $pdo->query("SELECT room_id, room_number FROM rooms ORDER BY room_numbe
                     </div>
                     <div>
                         <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Remark</label>
-                        <textarea name="admin_remark" id="modal_remark" rows="2" placeholder="Note for the tenant..." class="w-full mt-2 px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-green-500/10"></textarea>
+                        <textarea name="admin_note" id="modal_remark" rows="2" placeholder="Note for the tenant..." class="w-full mt-2 px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-green-500/10"></textarea>
                     </div>
                 </div>
 
@@ -262,7 +262,7 @@ $rooms = $pdo->query("SELECT room_id, room_number FROM rooms ORDER BY room_numbe
             document.getElementById('modal_title').innerText = data.title;
             document.getElementById('modal_desc').innerText = data.description || 'No description provided.';
             document.getElementById('modal_status').value = data.status;
-            document.getElementById('modal_remark').value = data.admin_remark || '';
+            document.getElementById('modal_remark').value = data.admin_note || '';
             document.getElementById('updateModal').classList.remove('hidden');
         }
 

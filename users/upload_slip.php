@@ -1,20 +1,20 @@
 <?php
-session_start();
-require_once '../config/db_connect.php';
+require_once __DIR__ . '/../config/app_config.php'; // Handles session_start()
+require_once __DIR__ . '/../config/db_connect.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
+    header('Location: ' . BASE_URL . 'login.php');
     exit;
 }
 
 $pay_id = $_GET['pay_id'] ?? null;
 if (!$pay_id) {
-    header('Location: view_bills.php');
+    header('Location: ' . BASE_URL . 'users/view_bills.php');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $target_dir = "../uploads/slips/";
+    $target_dir = __DIR__ . "/../uploads/slips/";
     
     if (!file_exists($target_dir)) {
         mkdir($target_dir, 0777, true);
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt = $pdo->prepare("UPDATE payments SET slip_image = ?, status = 'waiting' WHERE payment_id = ?");
             $stmt->execute([$new_filename, $pay_id]);
             
-            header("Location: view_bills.php?status=success");
+            header("Location: " . BASE_URL . "users/view_bills.php?status=success");
             exit;
         }
     }
@@ -67,6 +67,11 @@ $payment = $stmt->fetch();
                 <div class="bg-slate-900 rounded-3xl p-6 text-white mb-8">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ยอดเงินที่ต้องโอน</p>
                     <h2 class="text-4xl font-black text-emerald-400">฿<?= number_format($payment['amount'], 2) ?></h2>
+                </div>
+
+                <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm text-center mb-8">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">สแกนเพื่อชำระเงิน</p>
+                    <img src="<?= BASE_URL ?>assets/img/qr.jpg" alt="QR Code" class="max-w-[250px] mx-auto rounded-lg shadow-md border border-slate-100">
                 </div>
 
                 <form action="" method="POST" enctype="multipart/form-data" class="space-y-6">

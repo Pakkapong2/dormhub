@@ -1,10 +1,11 @@
 <?php
-session_start();
-error_reporting(0);
+require_once __DIR__ . '/../config/app_config.php'; // Handles session_start()
 require_once __DIR__ . '/../config/db_connect.php';
 
+// error_reporting(0); // Removed for better error visibility during development
+
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
+    header('Location: ' . BASE_URL . 'login.php');
     exit;
 }
 
@@ -14,29 +15,29 @@ $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($user['role'] === 'admin') {
-    header('Location: ../admin/manage_tenants.php');
+    header('Location: ' . BASE_URL . 'admin/manage_tenants.php');
     exit;
 }
 
 if (empty($user['room_id'])) {
     $_SESSION['role'] = 'viewer';
-    header('Location: ../index.php'); 
+    header('Location: ' . BASE_URL . 'index.php');
     exit;
 }
 
 // 2. ดึงข้อมูลบิลและข้อมูลห้องพัก
 $stmt = $pdo->prepare("
-    SELECT u.*, r.room_number, r.price as room_price,
+    SELECT u.*, r.room_number, r.base_rent as room_price,
     (SELECT SUM(amount) FROM payments WHERE user_id = u.user_id AND status = 'pending') as total_pending
-    FROM users u 
-    LEFT JOIN rooms r ON u.room_id = r.room_id 
+    FROM users u
+    LEFT JOIN rooms r ON u.room_id = r.room_id
     WHERE u.user_id = ?
 ");
 $stmt->execute([$user['user_id']]);
 $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // 3. (Optional) ดึงรายการแจ้งซ่อมล่าสุด
-$stmt = $pdo->prepare("SELECT status FROM maintenance WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
+$stmt = $pdo->prepare("SELECT status FROM maintenance WHERE user_id = ? ORDER BY reported_at DESC LIMIT 1");
 $stmt->execute([$user['user_id']]);
 $last_repair = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
@@ -54,8 +55,7 @@ $last_repair = $stmt->fetch(PDO::FETCH_ASSOC);
 </head>
 <body class="bg-slate-50 min-h-screen">
     
-    <?php include __DIR__ . '/../navbar.php'; ?>
-
+    <?php include __DIR__ . '/../sidebar.php'; ?>
     <main class="container mx-auto px-4 md:px-6 py-12 max-w-4xl">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
             <div>

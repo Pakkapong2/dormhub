@@ -1,30 +1,23 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/config/app_config.php'; // Include the new config file
+require_once __DIR__ . '/config/db_connect.php'; // Ensure db_connect is included after session starts and BASE_URL is defined
 
-// ตั้งค่า Base URL อัตโนมัติ
-$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$host = $_SERVER['HTTP_HOST'];
-$script_name = $_SERVER['SCRIPT_NAME'];
-$project_folder = explode('/', trim($script_name, '/'))[0];
-$auto_base_url = $protocol . "://" . $host . "/" . $project_folder . "/";
+// The session_start() call is now handled in app_config.php
+// The auto_base_url calculation is now handled in app_config.php and stored in BASE_URL constant
 
 $sb_user = null;
 $is_logged_in = isset($_SESSION['user_id']);
 
 if ($is_logged_in) {
-    $config_path = $_SERVER['DOCUMENT_ROOT'] . '/' . $project_folder . '/config/db_connect.php';
-    if (file_exists($config_path)) {
-        require_once $config_path;
-        $stmt_sb = $pdo->prepare("SELECT * FROM users WHERE user_id = ?");
-        $stmt_sb->execute([$_SESSION['user_id']]);
-        $sb_user = $stmt_sb->fetch(PDO::FETCH_ASSOC);
-    }
+    // db_connect.php is already included by app_config.php or is expected to be
+    // So we can directly use $pdo
+    $stmt_sb = $pdo->prepare("SELECT * FROM users WHERE user_id = ?");
+    $stmt_sb->execute([$_SESSION['user_id']]);
+    $sb_user = $stmt_sb->fetch(PDO::FETCH_ASSOC);
 }
 
 $sb_role      = $sb_user['role'] ?? ($_SESSION['role'] ?? 'guest');
-$sb_fullname  = $sb_user['fullname'] ?? ($_SESSION['name'] ?? 'Guest');
+$sb_fullname  = $sb_user['fullname'] ?? ($_SESSION['fullname'] ?? 'Guest'); // Use $_SESSION['fullname'] instead of $_SESSION['name']
 $sb_profile   = $sb_user['line_picture_url'] ?? ($_SESSION['picture'] ?? null);
 
 $current_page = basename($_SERVER['PHP_SELF']);
@@ -84,7 +77,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </div>
             </div>
         <?php else: ?>
-            <a href="<?= $auto_base_url ?>login.php" class="nav-link bg-white !text-green-600 font-black justify-center shadow-xl italic uppercase">
+            <a href="<?= BASE_URL ?>login.php" class="nav-link bg-white !text-green-600 font-black justify-center shadow-xl italic uppercase">
                 <i class="fa-solid fa-right-to-bracket"></i> Login
             </a>
         <?php endif; ?>
@@ -94,37 +87,57 @@ $current_page = basename($_SERVER['PHP_SELF']);
         
         <?php if ($sb_role === 'admin'): ?>
             <p class="text-[10px] text-green-100 font-black uppercase tracking-[0.2em] mb-4 mt-2 opacity-60">Admin Management</p>
-            <a href="<?= $auto_base_url ?>admin/admin_dashboard.php" class="nav-link <?= ($current_page == 'admin_dashboard.php') ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>admin/admin_dashboard.php" class="nav-link <?= ($current_page == 'admin_dashboard.php') ? 'active' : '' ?>">
                 <i class="fa-solid fa-chart-pie w-6"></i> <span>Dashboard</span>
             </a>
-            <a href="<?= $auto_base_url ?>admin/manage_bookings.php" class="nav-link <?= ($current_page == 'manage_bookings.php') ? 'active' : '' ?>">
-                <i class="fa-solid fa-check-to-slot w-6"></i> <span>อนุมัติการจอง</span>
-            </a>
-            <a href="<?= $auto_base_url ?>admin/manage_rooms.php" class="nav-link <?= ($current_page == 'manage_rooms.php') ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>admin/manage_rooms.php" class="nav-link <?= ($current_page == 'manage_rooms.php') ? 'active' : '' ?>">
                 <i class="fa-solid fa-door-open w-6"></i> <span>จัดการห้องพัก</span>
             </a>
-            <a href="<?= $auto_base_url ?>admin/manage_tenants.php" class="nav-link <?= ($current_page == 'manage_tenants.php') ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>admin/manage_tenants.php" class="nav-link <?= ($current_page == 'manage_tenants.php') ? 'active' : '' ?>">
                 <i class="fa-solid fa-users-gear w-6"></i> <span>จัดการผู้เช่า</span>
+            </a>
+            <a href="<?= BASE_URL ?>admin/manage_bookings.php" class="nav-link <?= ($current_page == 'manage_bookings.php') ? 'active' : '' ?>">
+                <i class="fa-solid fa-check-to-slot w-6"></i> <span>อนุมัติการจอง</span>
+            </a>
+            <a href="<?= BASE_URL ?>admin/meter_records.php" class="nav-link <?= ($current_page == 'meter_records.php') ? 'active' : '' ?>">
+                <i class="fa-solid fa-gauge-high w-6"></i> <span>จดมิเตอร์</span>
+            </a>
+            <a href="<?= BASE_URL ?>admin/manage_bills.php" class="nav-link <?= ($current_page == 'manage_bills.php') ? 'active' : '' ?>">
+                <i class="fa-solid fa-file-invoice-dollar w-6"></i> <span>จัดการบิล</span>
+            </a>
+            <a href="<?= BASE_URL ?>admin/manage_maintenance.php" class="nav-link <?= ($current_page == 'manage_maintenance.php') ? 'active' : '' ?>">
+                <i class="fa-solid fa-wrench w-6"></i> <span>จัดการแจ้งซ่อม</span>
+            </a>
+            <a href="<?= BASE_URL ?>admin/settings.php" class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>">
+                <i class="fa-solid fa-sliders w-6"></i> <span>ตั้งค่าระบบ</span>
             </a>
 
         <?php else: ?>
             <p class="text-[10px] text-green-100 font-black uppercase tracking-[0.2em] mb-4 mt-2 opacity-60">General Menu</p>
-            <a href="<?= $auto_base_url ?>index.php" class="nav-link <?= ($current_page == 'index.php') ? 'active' : '' ?>">
+            <?php if ($sb_role !== 'user'): ?>
+            <a href="<?= BASE_URL ?>index.php" class="nav-link <?= ($current_page == 'index.php') ? 'active' : '' ?>">
                 <i class="fa-solid fa-house w-6"></i> <span>หน้าแรก / จองห้อง</span>
             </a>
+            <?php endif; ?>
             
             <?php if ($is_logged_in): ?>
-                <a href="<?= $auto_base_url ?>view_booking.php" class="nav-link <?= ($current_page == 'view_booking.php') ? 'active' : '' ?>">
+                <a href="<?= BASE_URL ?>view_booking.php" class="nav-link <?= ($current_page == 'view_booking.php') ? 'active' : '' ?>">
                     <i class="fa-solid fa-clock-rotate-left w-6"></i> <span>ติดตามสถานะการจอง</span>
                 </a>
 
                 <?php if ($sb_role === 'user'): ?>
                     <div class="mt-4 pt-4 border-t border-white/10">
                         <p class="text-[10px] text-green-100 font-black uppercase tracking-[0.2em] mb-4 opacity-60">Tenant Menu</p>
-                        <a href="<?= $auto_base_url ?>user/view_bills.php" class="nav-link <?= ($current_page == 'view_bills.php') ? 'active' : '' ?>">
+                        <a href="<?= BASE_URL ?>users/view_bills.php" class="nav-link <?= ($current_page == 'view_bills.php') ? 'active' : '' ?>">
                             <i class="fa-solid fa-receipt w-6"></i> <span>บิลของฉัน</span>
                         </a>
-                        <a href="<?= $auto_base_url ?>user/report_repair.php" class="nav-link <?= ($current_page == 'report_repair.php') ? 'active' : '' ?>">
+                        <a href="<?= BASE_URL ?>users/payment_history.php" class="nav-link <?= ($current_page == 'payment_history.php') ? 'active' : '' ?>">
+                            <i class="fa-solid fa-clock-rotate-left w-6"></i> <span>ประวัติชำระเงิน</span>
+                        </a>
+                        <a href="<?= BASE_URL ?>users/meter_records.php" class="nav-link <?= ($current_page == 'meter_records.php') ? 'active' : '' ?>">
+                            <i class="fa-solid fa-gauge-high w-6"></i> <span>ประวัติมิเตอร์</span>
+                        </a>
+                        <a href="<?= BASE_URL ?>users/report_repair.php" class="nav-link <?= ($current_page == 'report_repair.php') ? 'active' : '' ?>">
                             <i class="fa-solid fa-wrench w-6"></i> <span>แจ้งซ่อม</span>
                         </a>
                     </div>
@@ -134,7 +147,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <?php if ($is_logged_in): ?>
             <div class="mt-auto pt-10">
-                <a href="<?= $auto_base_url ?>logout.php" class="nav-link !text-red-100 hover:!bg-red-500/20">
+                <a href="<?= BASE_URL ?>logout.php" class="nav-link !text-red-100 hover:!bg-red-500/20">
                     <i class="fa-solid fa-right-from-bracket w-6"></i> <span class="font-bold italic">Sign Out</span>
                 </a>
             </div>

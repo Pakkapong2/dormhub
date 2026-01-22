@@ -1,7 +1,8 @@
 <?php
-session_start();
-error_reporting(0);
-require 'config/db_connect.php';
+require_once __DIR__ . '/config/app_config.php'; // Includes session_start()
+require_once __DIR__ . '/config/db_connect.php'; 
+
+// error_reporting(0); // Removed for better error visibility during development
 
 $code = $_GET['code'] ?? null;
 $state = $_GET['state'] ?? null;
@@ -17,7 +18,7 @@ $token_url = 'https://api.line.me/oauth2/v2.1/token';
 $data = [
     'grant_type' => 'authorization_code',
     'code' => $code,
-    'redirect_uri' => 'http://localhost/dormhub/line_callback.php',
+    'redirect_uri' => BASE_URL . 'line_callback.php', // Use BASE_URL
     'client_id' => '2008447819',
     'client_secret' => '8b06447416799b311b55bf33e4b777c5'
 ];
@@ -68,20 +69,20 @@ $_SESSION['role']     = $user['role']; // สำคัญมาก: ต้อง
 
 // 5. ระบบดีดหน้า (Redirect Logic) 
 // ใช้ Full Path เพื่อป้องกัน Browser หลงทาง
-$base_url = "http://localhost/dormhub/";
+// $base_url = "http://localhost/dormhub/"; // Replaced with BASE_URL constant
 
 if ($user['role'] === 'admin') {
-    header("Location: " . $base_url . "admin/manage_tenants.php");
+    header("Location: " . BASE_URL . "admin/manage_tenants.php");
 } elseif ($user['role'] === 'user') {
     // ถ้าเป็น user แต่ไม่มีห้องพัก ให้ถือว่าเป็น viewer ก่อน
     if (empty($user['room_id']) || $user['room_id'] == 0) {
         $_SESSION['role'] = 'viewer';
-        header("Location: " . $base_url . "index.php");
+        header("Location: " . BASE_URL . "index.php");
     } else {
-        header("Location: " . $base_url . "users/index.php");
+        header("Location: " . BASE_URL . "users/index.php");
     }
 } else {
     // viewer
-    header("Location: " . $base_url . "index.php");
+    header("Location: " . BASE_URL . "index.php");
 }
 exit;

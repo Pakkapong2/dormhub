@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 22, 2026 at 09:05 AM
+-- Generation Time: Jan 22, 2026 at 07:32 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -111,6 +111,13 @@ CREATE TABLE `meters` (
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `meters`
+--
+
+INSERT INTO `meters` (`meter_id`, `room_id`, `base_rent_at_time`, `billing_month`, `prev_water_meter`, `curr_water_meter`, `prev_electric_meter`, `curr_electric_meter`, `water_total`, `water_rate_at_time`, `electric_total`, `electric_rate_at_time`, `total_amount`, `created_at`) VALUES
+(7, 15, 0.00, '2026-01', 0, 10, 0, 10, 180.00, 0.00, 70.00, 0.00, 250.00, '2026-01-22 17:03:17');
+
 -- --------------------------------------------------------
 
 --
@@ -142,7 +149,7 @@ CREATE TABLE `rooms` (
   `base_rent` decimal(10,2) NOT NULL DEFAULT 0.00,
   `floor` varchar(10) DEFAULT NULL,
   `price_per_month` decimal(10,2) DEFAULT 0.00,
-  `status` enum('occupied','available','maintenance') DEFAULT 'available',
+  `status` enum('occupied','available','maintenance','booked') DEFAULT 'available',
   `room_image` varchar(255) DEFAULT 'default_room.jpg',
   `description` text DEFAULT NULL,
   `amenities` varchar(255) DEFAULT NULL,
@@ -195,7 +202,7 @@ CREATE TABLE `users` (
   `phone` varchar(15) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `room_id` int(11) DEFAULT NULL,
-  `role` enum('admin','user') DEFAULT 'user',
+  `role` enum('admin','user','viewer') DEFAULT 'viewer',
   `line_user_id` varchar(100) DEFAULT NULL,
   `line_display_name` varchar(100) DEFAULT NULL,
   `line_picture_url` varchar(255) DEFAULT NULL,
@@ -207,9 +214,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `username`, `password`, `fullname`, `phone`, `email`, `room_id`, `role`, `line_user_id`, `line_display_name`, `line_picture_url`, `created_at`) VALUES
-(1, NULL, NULL, 'Pakkapong', NULL, NULL, NULL, 'admin', 'U99b7c3faa96d7b6a11d7837f12ea54c6', 'Pakkapong', 'https://profile.line-scdn.net/0hUTuvuQhdCntYDxvOpMR0BChfCRF7flNpJDxNGm8KB0I2bRl4c2hDGG4IABxhN00uI2hFHG8LABhUHH0dRln2T18_V0pkNkgocmBFlQ', '2025-11-08 17:37:30'),
 (4, '0111111111', '$2y$10$EjIexvdK766BtFqIxmCNjOe.AcZdGUL0lx88TqMIZV2PuPIuA01BG', 'arisa', '0111111111', NULL, 15, 'user', NULL, NULL, NULL, '2025-12-25 13:28:33'),
-(5, '1111111111', '$2y$10$mkkW5qnnqj1gaBHe3q2AHe3nZ7l2v6meK8DQHQg5.yPoR1JPFvo/G', 'pakkapong', '1111111111', NULL, 16, 'user', NULL, NULL, NULL, '2025-12-30 01:59:01');
+(5, '1111111111', '$2y$10$mkkW5qnnqj1gaBHe3q2AHe3nZ7l2v6meK8DQHQg5.yPoR1JPFvo/G', 'pakkapong', '1111111111', NULL, 16, 'user', NULL, NULL, NULL, '2025-12-30 01:59:01'),
+(8, 'admin01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', NULL, NULL, NULL, 'admin', NULL, NULL, NULL, '2026-01-23 00:19:13'),
+(9, 'U99b7c3faa96d7b6a11d7837f12ea54c6', NULL, 'Pakkapong', NULL, NULL, NULL, 'viewer', 'U99b7c3faa96d7b6a11d7837f12ea54c6', NULL, 'https://profile.line-scdn.net/0hUTuvuQhdCntYDxvOpMR0BChfCRF7flNpJDxNGm8KB0I2bRl4c2hDGG4IABxhN00uI2hFHG8LABhUHH0dRln2T18_V0pkNkgocmBFlQ', '2026-01-23 01:17:57');
 
 --
 -- Indexes for dumped tables
@@ -295,7 +303,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `contracts`
@@ -319,13 +327,13 @@ ALTER TABLE `maintenance`
 -- AUTO_INCREMENT for table `meters`
 --
 ALTER TABLE `meters`
-  MODIFY `meter_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `meter_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `rooms`
@@ -343,7 +351,7 @@ ALTER TABLE `settings`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- Constraints for dumped tables

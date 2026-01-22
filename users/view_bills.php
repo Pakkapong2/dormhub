@@ -1,9 +1,9 @@
 <?php
-session_start();
-require_once '../config/db_connect.php';
+require_once __DIR__ . '/../config/app_config.php'; // Handles session_start()
+require_once __DIR__ . '/../config/db_connect.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php'); 
+    header('Location: ' . BASE_URL . 'login.php');
     exit;
 }
 
@@ -38,8 +38,7 @@ $config = $pdo->query("SELECT * FROM settings LIMIT 1")->fetch();
 <body class="bg-slate-50 min-h-screen pb-10">
 
     <div class="container mx-auto px-4 py-8 max-w-md">
-        <a href="../index.php" class="inline-flex items-center mb-6 text-slate-500 hover:text-slate-800 transition-colors font-bold text-sm">
-            <i class="fa-solid fa-chevron-left mr-2"></i> กลับหน้า Dashboard
+        <a href="<?= BASE_URL ?>users/index.php" class="inline-flex items-center mb-6 text-slate-500 hover:text-slate-800 transition-colors font-bold text-sm">            <i class="fa-solid fa-chevron-left mr-2"></i> กลับหน้า Dashboard
         </a>
 
         <?php if ($bill): ?>

@@ -1,6 +1,28 @@
-<?php 
-session_start();
-require_once 'config/db_connect.php'; 
+<?php
+require_once __DIR__ . '/config/app_config.php'; // Handles session_start()
+require_once __DIR__ . '/config/db_connect.php';
+
+// Check if user is logged in and has 'user' or 'admin' role
+if (isset($_SESSION['user_id'])) {
+    // Re-fetch user details to ensure role and room_id are current from DB
+    $stmt_user_check = $pdo->prepare("SELECT role, room_id FROM users WHERE user_id = ?");
+    $stmt_user_check->execute([$_SESSION['user_id']]);
+    $current_user_data = $stmt_user_check->fetch(PDO::FETCH_ASSOC);
+
+    if ($current_user_data) {
+        $user_role_from_db = $current_user_data['role'];
+        $user_room_id_from_db = $current_user_data['room_id'];
+
+        // If a 'user' role without a room, still allow access to index.php (as they are like a 'viewer')
+        // Otherwise, if 'user' with a room OR 'admin', redirect.
+        if ($user_role_from_db === 'admin' || ($user_role_from_db === 'user' && !empty($user_room_id_from_db))) {
+            header("Location: " . BASE_URL . "login.php");
+            exit;
+        }
+        // If 'user' role without a room, their $_SESSION['role'] would be 'viewer', so they can still access index.php.
+        // This logic aligns with login.php and line_callback.php where a 'user' without room is treated as 'viewer'.
+    }
+}
 
 // กรองข้อมูล (Search)
 $search = $_GET['search'] ?? '';
@@ -27,6 +49,7 @@ try {
 } catch (PDOException $e) {
     die("Error: " . $e->getMessage());
 }
+
 ?>
 
 <!DOCTYPE html>
